@@ -1,0 +1,7 @@
+# The dev Keycloak realm credentials are committed on purpose.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local dev secrets (infra/)"
+paths = ['''infra/keycloak/realm/.*\.json''']

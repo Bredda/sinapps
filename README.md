@@ -1,0 +1,32 @@
+# Sinapps
+
+Multi-user conversational assistant that answers with interactive interfaces generated on the fly (MCP Apps, AG-UI).
+
+- Spec: [docs/architecture-proposal.md](docs/architecture-proposal.md)
+- Current plan: [docs/plan/m0.md](docs/plan/m0.md)
+
+## Prerequisites
+
+- Node 24 (`.nvmrc`), pnpm 12 (`corepack enable`)
+- Docker (local Postgres + Keycloak)
+- Optional: [gitleaks](https://github.com/gitleaks/gitleaks) installed locally (otherwise the pre-commit hook skips it; CI enforces it)
+
+## Getting started
+
+```bash
+cp .env.example .env        # fill in OPENROUTER_API_KEY, TAVILY_API_KEY
+pnpm install                # also installs the git hooks (lefthook)
+pnpm infra:up               # Postgres :5433, Keycloak :8180 (admin/admin)
+pnpm dev
+```
+
+Dev accounts (realm `sinapps`): `alice` / `alice` (FR) and `bob` / `bob` (EN), both with the `sinapps-user` role. `carol` / `carol` lacks that role (access-denied testing).
+
+Local observability: `pnpm infra:obs` (Grafana on :3300, OTLP on :4317/:4318).
+
+## Conventions
+
+- Lint and format: Biome (`pnpm check`, `pnpm check:fix`)
+- Commits: Conventional Commits (commitlint)
+- Hooks: pre-commit (Biome on staged files + gitleaks), commit-msg (commitlint), pre-push (affected typecheck + test)
+- Language: everything in the repo (docs, code, comments, commits) is written in English

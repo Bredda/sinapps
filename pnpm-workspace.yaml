@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 12 blocks install scripts by default: allow them explicitly.
+allowBuilds:
+  esbuild: true
+  lefthook: false
+
+minimumReleaseAgeExclude:
+  - '@turbo/darwin-64@2.11.9'
+  - '@turbo/darwin-arm64@2.11.9'
+  - '@turbo/linux-64@2.11.9'
+  - '@turbo/linux-arm64@2.11.9'
+  - '@turbo/windows-64@2.11.9'
+  - '@turbo/windows-arm64@2.11.9'
+  - turbo@2.11.9
