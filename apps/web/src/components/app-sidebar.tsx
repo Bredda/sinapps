@@ -2,8 +2,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -12,6 +10,7 @@ import {
 import { Link, useRouteContext } from "@tanstack/react-router";
 import { MessageSquarePlusIcon, SparklesIcon } from "lucide-react";
 import { m } from "@/paraglide/messages.js";
+import { ConversationList } from "./conversation-list";
 import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
@@ -39,10 +38,7 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          {/* Conversation list lands here in T10. */}
-          <SidebarGroupLabel>{m.nav_conversations()}</SidebarGroupLabel>
-        </SidebarGroup>
+        <ConversationList />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

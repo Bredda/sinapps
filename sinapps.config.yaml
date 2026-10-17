@@ -3,6 +3,8 @@
 
 models:
   default: anthropic/claude-sonnet-5.5
+  # Side tasks such as conversation titles.
+  utility: google/gemini-3.8-flash
   allowlist:
     - id: anthropic/claude-opus-5.5
       label: Claude Opus 5.5

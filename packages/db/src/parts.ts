@@ -25,7 +25,7 @@ export const reasoningPart = z.object({
   encrypted: z.boolean().optional(),
   durationMs: z.number().nonnegative().optional(),
   /** Opaque provider data needed to replay the reasoning to the model (signatures…). */
-  providerMetadata: z.record(z.string(), z.unknown()).optional(),
+  providerMetadata: z.record(z.string(), z.json()).optional(),
 });
 
 export const toolCallStatus = z.enum(["streaming-args", "running", "success", "error", "cancelled"]);
@@ -43,8 +43,8 @@ export const toolCallPart = z.object({
   /** MCP Apps link, known from TOOL_CALL_START: the widget frame can render early. */
   uiResourceUri: z.string().optional(),
   status: toolCallStatus,
-  args: z.unknown().optional(),
-  result: z.unknown().optional(),
+  args: z.json().optional(),
+  result: z.json().optional(),
   error: z.string().optional(),
   durationMs: z.number().nonnegative().optional(),
 });
@@ -88,8 +88,8 @@ export const questionPart = z.object({
   toolCallId: z.string(),
   prompt: z.string(),
   /** Questionnaire definition; its shape is owned by the UI component. */
-  form: z.unknown(),
-  answer: z.unknown().optional(),
+  form: z.json(),
+  answer: z.json().optional(),
 });
 
 export const errorPart = z.object({
@@ -104,7 +104,7 @@ export const markerPart = z.object({
   type: z.literal("marker"),
   id: z.string(),
   kind: z.enum(["model-change", "interrupted", "auto-fix"]),
-  data: z.record(z.string(), z.unknown()).optional(),
+  data: z.record(z.string(), z.json()).optional(),
 });
 
 export const messagePart = z.discriminatedUnion("type", [

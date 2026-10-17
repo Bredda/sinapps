@@ -7,6 +7,7 @@ savePrefix: ""
 
 # pnpm 12 blocks install scripts by default: allow them explicitly.
 allowBuilds:
+  '@openrouter/sdk': false
   esbuild: true
   lefthook: false
 

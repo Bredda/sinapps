@@ -14,6 +14,8 @@
     "@sinapps/db": "workspace:*",
     "@sinapps/ui": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/ai": "0.69.0",
+    "@tanstack/ai-openrouter": "0.22.0",
     "@tanstack/react-router": "1.170.45",
     "@tanstack/react-start": "1.169.3",
     "better-auth": "1.7.10",

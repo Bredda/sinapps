@@ -4,6 +4,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
 import { PreferencesSync } from "@/components/preferences-sync";
 import { m } from "@/paraglide/messages.js";
+import { fetchConversations } from "@/server/conversations.functions";
 import { getSession } from "@/server/session.functions";
 
 /** Authenticated application shell: sidebar + main area. */
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_app")({
     if (!session.authorized || !session.preferences) throw redirect({ to: "/forbidden" });
     return { user: session.user, preferences: session.preferences };
   },
+  loader: () => fetchConversations(),
   component: AppLayout,
 });
 

@@ -23,12 +23,20 @@ const configSchema = z
   .object({
     models: z.object({
       default: z.string(),
+      /** Model for side tasks (conversation titles…): cheap and fast. Defaults to `default`. */
+      utility: z.string().optional(),
       allowlist: z.array(modelSchema).min(1),
     }),
   })
   .refine((config) => config.models.allowlist.some((model) => model.id === config.models.default), {
     message: "models.default must be one of models.allowlist",
-  });
+  })
+  .refine(
+    (config) => !config.models.utility || config.models.allowlist.some((model) => model.id === config.models.utility),
+    {
+      message: "models.utility must be one of models.allowlist",
+    },
+  );
 
 export type ModelConfig = z.infer<typeof modelSchema>;
 
@@ -38,6 +46,10 @@ export const config = configSchema.parse(parse(readFileSync(env.SINAPPS_CONFIG, 
 /** Public view of the allowlist, safe to send to the browser. */
 export function listModels() {
   return config.models.allowlist.map(({ id, label, tier }) => ({ id, label, tier }));
+}
+
+export function getModel(id: string): ModelConfig | undefined {
+  return config.models.allowlist.find((model) => model.id === id);
 }
 
 export function isAllowedModel(id: string): boolean {
