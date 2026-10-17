@@ -1,11 +1,20 @@
 import { Separator } from "@sinapps/ui/components/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@sinapps/ui/components/sidebar";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
 import { m } from "@/paraglide/messages.js";
+import { getSession } from "@/server/session.functions";
 
-/** Authenticated application shell: sidebar + main area. The auth guard lands here in T8. */
-export const Route = createFileRoute("/_app")({ component: AppLayout });
+/** Authenticated application shell: sidebar + main area. */
+export const Route = createFileRoute("/_app")({
+  beforeLoad: async ({ location }) => {
+    const session = await getSession();
+    if (!session) throw redirect({ to: "/login", search: { redirect: location.href } });
+    if (!session.authorized) throw redirect({ to: "/forbidden" });
+    return { user: session.user };
+  },
+  component: AppLayout,
+});
 
 function AppLayout() {
   return (

@@ -9,11 +9,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@sinapps/ui/components/sidebar";
-import { Link } from "@tanstack/react-router";
-import { MessageSquarePlusIcon, SettingsIcon, SparklesIcon } from "lucide-react";
+import { Link, useRouteContext } from "@tanstack/react-router";
+import { MessageSquarePlusIcon, SparklesIcon } from "lucide-react";
 import { m } from "@/paraglide/messages.js";
+import { NavUser } from "./nav-user";
 
 export function AppSidebar() {
+  const { user } = useRouteContext({ from: "/_app" });
   return (
     <Sidebar>
       <SidebarHeader>
@@ -43,16 +45,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link to="/settings" activeProps={{ "data-active": true }}>
-                <SettingsIcon />
-                <span>{m.nav_settings()}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

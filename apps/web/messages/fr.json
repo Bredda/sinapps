@@ -14,5 +14,13 @@
   "theme_dark": "Sombre",
   "theme_system": "Système",
   "not_found_title": "Page introuvable",
-  "not_found_body": "La page demandée est introuvable."
+  "not_found_body": "La page demandée est introuvable.",
+  "login_title": "Connexion à Sinapps",
+  "login_subtitle": "Utilisez le compte de votre organisation pour continuer.",
+  "login_button": "Se connecter",
+  "login_error": "La connexion a échoué. Veuillez réessayer.",
+  "forbidden_title": "Accès refusé",
+  "forbidden_body": "{email} est connecté mais n'a pas accès à Sinapps. Demandez un accès à un administrateur.",
+  "sign_out": "Se déconnecter",
+  "user_menu": "Menu du compte"
 }

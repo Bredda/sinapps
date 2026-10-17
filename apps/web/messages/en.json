@@ -14,5 +14,13 @@
   "theme_dark": "Dark",
   "theme_system": "System",
   "not_found_title": "Page not found",
-  "not_found_body": "The requested page could not be found."
+  "not_found_body": "The requested page could not be found.",
+  "login_title": "Sign in to Sinapps",
+  "login_subtitle": "Use your organization account to continue.",
+  "login_button": "Sign in",
+  "login_error": "Sign-in failed. Please try again.",
+  "forbidden_title": "Access denied",
+  "forbidden_body": "{email} is signed in but doesn't have access to Sinapps. Ask an administrator for access.",
+  "sign_out": "Sign out",
+  "user_menu": "Account menu"
 }

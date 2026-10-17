@@ -384,8 +384,8 @@ Models and MCP servers are **not** stored in the database: they come from config
 - **Keycloak**: in dev, the `sinapps` realm is imported when the container starts. In prod, the realm is provided by the infrastructure.
   - Client `sinapps-web`: confidential, code + PKCE, redirect `https://app.<domain>/api/auth/oauth2/callback/keycloak`, post-logout redirect.
   - `registrationAllowed: false`.
-  - Optional role `sinapps-user`, checked when `auth.requiredRole` is set.
-- **better-auth**: cookie session stored in PG. User created on first sign-in. Only the Keycloak provider is enabled.
+  - Optional role `sinapps-user`, checked when `AUTH_REQUIRED_ROLE` is set. Roles are read from the `roles` claim of the stored Keycloak id token (verified at sign-in), never copied into a user column: better-auth only maps provider fields that users can also edit themselves.
+- **better-auth**: cookie session stored in PG. User created on first sign-in. Only the Keycloak provider is enabled (`keycloak()` preset of `genericOAuth`). `signOut()` performs RP-initiated logout natively. Access/refresh tokens are encrypted at rest.
 - **apps/web → mcp-genui**: non-exposed ClusterIP service, NetworkPolicy (ingress from web pods only) and a shared static bearer (Secret). No user identity propagated: `mcp-genui` tools touch no user data.
 - **Third-party MCP** (Tavily…): server-level credential, injected from a Secret (`Authorization` header).
 
