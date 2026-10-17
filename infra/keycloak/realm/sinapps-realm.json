@@ -1,0 +1,93 @@
+{
+  "realm": "sinapps",
+  "displayName": "Sinapps",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": true,
+  "loginWithEmailAllowed": true,
+  "sslRequired": "external",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "en"],
+  "defaultLocale": "en",
+  "roles": {
+    "realm": [
+      {
+        "name": "sinapps-user",
+        "description": "Access to the Sinapps application"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "sinapps-web",
+      "name": "Sinapps web (dev)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "sinapps-web-dev-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
+      "optionalClientScopes": ["offline_access"],
+      "protocolMappers": [
+        {
+          "name": "realm roles (top-level claim)",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "email": "alice@sinapps.local",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Martin",
+      "enabled": true,
+      "attributes": { "locale": ["fr"] },
+      "credentials": [{ "type": "password", "value": "alice", "temporary": false }],
+      "realmRoles": ["default-roles-sinapps", "sinapps-user"]
+    },
+    {
+      "username": "bob",
+      "email": "bob@sinapps.local",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Smith",
+      "enabled": true,
+      "attributes": { "locale": ["en"] },
+      "credentials": [{ "type": "password", "value": "bob", "temporary": false }],
+      "realmRoles": ["default-roles-sinapps", "sinapps-user"]
+    },
+    {
+      "username": "carol",
+      "email": "carol@sinapps.local",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "No-Access",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "carol", "temporary": false }],
+      "realmRoles": ["default-roles-sinapps"]
+    }
+  ]
+}
