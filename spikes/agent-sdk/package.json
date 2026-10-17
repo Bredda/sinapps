@@ -1,0 +1,26 @@
+{
+  "name": "spike-agent-sdk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mcp": "tsx mcp-server.ts",
+    "run:spike": "tsx --env-file-if-exists=../../.env spike.ts"
+  },
+  "dependencies": {
+    "@ag-ui/core": "1.0.3",
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/server": "2.3.1",
+    "@tanstack/ai": "0.69.0",
+    "@tanstack/ai-mcp": "0.9.0",
+    "@tanstack/ai-openrouter": "0.22.0",
+    "@tanstack/ai-persistence": "^0.9.0",
+    "partial-json": "^0.1.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
