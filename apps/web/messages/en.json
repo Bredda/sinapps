@@ -1,0 +1,18 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "Sinapps",
+  "nav_new_chat": "New chat",
+  "nav_conversations": "Conversations",
+  "nav_settings": "Settings",
+  "nav_toggle_sidebar": "Toggle sidebar",
+  "chat_empty_title": "What can I build for you?",
+  "chat_empty_subtitle": "Ask a question: I can answer with text, or with an interactive interface.",
+  "settings_title": "Settings",
+  "settings_language": "Language",
+  "settings_theme": "Theme",
+  "theme_light": "Light",
+  "theme_dark": "Dark",
+  "theme_system": "System",
+  "not_found_title": "Page not found",
+  "not_found_body": "The requested page could not be found."
+}

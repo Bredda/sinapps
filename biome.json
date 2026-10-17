@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/.output", "!**/routeTree.gen.ts", "!spikes", "!**/migrations/meta"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/.output",
+      "!**/routeTree.gen.ts",
+      "!spikes",
+      "!**/migrations/meta",
+      "!**/src/paraglide"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -34,5 +42,25 @@
       "semicolons": "always",
       "trailingCommas": "all"
     }
-  }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/ui/src/components/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          },
+          "suspicious": {
+            "noDocumentCookie": "off"
+          }
+        }
+      }
+    }
+  ]
 }

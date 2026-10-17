@@ -1,0 +1,10 @@
+{
+  "extends": "@sinapps/tsconfig/react.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "@sinapps/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}
