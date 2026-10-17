@@ -1,0 +1,4 @@
+{
+  "extends": "@sinapps/tsconfig/node.json",
+  "include": ["src", "scripts", "drizzle.config.ts"]
+}

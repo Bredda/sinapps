@@ -2,6 +2,9 @@ packages:
   - apps/*
   - packages/*
 
+# Pin exact versions on `pnpm add`.
+savePrefix: ""
+
 # pnpm 12 blocks install scripts by default: allow them explicitly.
 allowBuilds:
   esbuild: true

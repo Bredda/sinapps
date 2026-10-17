@@ -16,7 +16,10 @@
     "check:fix": "biome check --write .",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "infra:obs": "docker compose -f infra/docker-compose.yml --profile observability up -d --wait"
+    "infra:obs": "docker compose -f infra/docker-compose.yml --profile observability up -d --wait",
+    "db:generate": "pnpm --filter @sinapps/db db:generate",
+    "db:migrate": "pnpm --filter @sinapps/db db:migrate",
+    "db:studio": "pnpm --filter @sinapps/db db:studio"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
