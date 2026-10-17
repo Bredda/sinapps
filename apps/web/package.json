@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "pnpm i18n:compile && tsc --noEmit",
-    "i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy cookie preferredLanguage baseLocale"
+    "i18n:compile": "node scripts/i18n-compile.ts"
   },
   "dependencies": {
     "@sinapps/db": "workspace:*",
@@ -23,6 +23,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
+    "yaml": "2.9.1",
     "zod": "4.6.7"
   },
   "devDependencies": {

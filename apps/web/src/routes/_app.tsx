@@ -2,6 +2,7 @@ import { Separator } from "@sinapps/ui/components/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@sinapps/ui/components/sidebar";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/app-sidebar";
+import { PreferencesSync } from "@/components/preferences-sync";
 import { m } from "@/paraglide/messages.js";
 import { getSession } from "@/server/session.functions";
 
@@ -10,8 +11,8 @@ export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
     const session = await getSession();
     if (!session) throw redirect({ to: "/login", search: { redirect: location.href } });
-    if (!session.authorized) throw redirect({ to: "/forbidden" });
-    return { user: session.user };
+    if (!session.authorized || !session.preferences) throw redirect({ to: "/forbidden" });
+    return { user: session.user, preferences: session.preferences };
   },
   component: AppLayout,
 });
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/_app")({
 function AppLayout() {
   return (
     <SidebarProvider>
+      <PreferencesSync />
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">

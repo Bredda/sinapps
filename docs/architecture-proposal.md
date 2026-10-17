@@ -351,7 +351,7 @@ sinapps/
 ├─ deploy/helm/sinapps/
 ├─ .github/workflows/  ci.yml, release.yml
 ├─ biome.json · lefthook.yml · commitlint.config.ts · turbo.json · pnpm-workspace.yaml
-└─ sinapps.config.example.yaml    models + MCP servers (same schema as the Helm values)
+└─ sinapps.config.yaml            dev runtime config: models + MCP servers (same schema as the Helm values, path in SINAPPS_CONFIG)
 ```
 
 ### 3.7 Data model (high level)

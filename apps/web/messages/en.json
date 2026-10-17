@@ -22,5 +22,11 @@
   "forbidden_title": "Access denied",
   "forbidden_body": "{email} is signed in but doesn't have access to Sinapps. Ask an administrator for access.",
   "sign_out": "Sign out",
-  "user_menu": "Account menu"
+  "user_menu": "Account menu",
+  "settings_default_model": "Default model",
+  "settings_default_model_hint": "Used for new conversations. You can still switch models in each conversation.",
+  "model_tier_premium": "Premium",
+  "model_tier_balanced": "Balanced",
+  "model_tier_fast": "Fast",
+  "model_tier_budget": "Budget"
 }

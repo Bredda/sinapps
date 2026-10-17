@@ -6,7 +6,8 @@
       "@/*": ["./src/*"],
       "@sinapps/ui/*": ["../../packages/ui/src/*"]
     },
-    "allowJs": true
+    "allowJs": true,
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "scripts", "vite.config.ts", "paraglide.config.ts"]
 }

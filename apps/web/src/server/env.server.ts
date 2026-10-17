@@ -12,6 +12,7 @@ const devDefaults = {
   KEYCLOAK_CLIENT_ID: "sinapps-web",
   KEYCLOAK_CLIENT_SECRET: "sinapps-web-dev-secret",
   AUTH_REQUIRED_ROLE: "sinapps-user",
+  SINAPPS_CONFIG: "../../sinapps.config.yaml",
 };
 
 const envSchema = z.object({
@@ -23,6 +24,8 @@ const envSchema = z.object({
   KEYCLOAK_CLIENT_SECRET: z.string().min(1),
   /** Realm role required to use the app; empty means any authenticated user. */
   AUTH_REQUIRED_ROLE: z.string().optional(),
+  /** Path to the runtime configuration file (models, MCP servers). */
+  SINAPPS_CONFIG: z.string().min(1),
 });
 
 const provided = Object.fromEntries(

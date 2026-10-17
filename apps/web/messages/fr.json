@@ -22,5 +22,11 @@
   "forbidden_title": "Accès refusé",
   "forbidden_body": "{email} est connecté mais n'a pas accès à Sinapps. Demandez un accès à un administrateur.",
   "sign_out": "Se déconnecter",
-  "user_menu": "Menu du compte"
+  "user_menu": "Menu du compte",
+  "settings_default_model": "Modèle par défaut",
+  "settings_default_model_hint": "Utilisé pour les nouvelles conversations. Vous pouvez toujours changer de modèle dans chaque conversation.",
+  "model_tier_premium": "Premium",
+  "model_tier_balanced": "Équilibré",
+  "model_tier_fast": "Rapide",
+  "model_tier_budget": "Économique"
 }
