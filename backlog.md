@@ -18,6 +18,8 @@ Items to revisit later: things found along the way that are unrelated to the cur
 - **Paraglide compile needs network** — `project.inlang/settings.json` loads `plugin-message-format` from jsDelivr at compile time (typecheck, build, CI). Consider a local module path to make builds hermetic.
 - **Session check on every navigation** — `_app` `beforeLoad` calls the `getSession` server function (plus an `account` query for roles) on each client-side navigation. Cache it in router context or with TanStack Query if it shows up in latency.
 - **Locale on a new device costs one reload** — `PreferencesSync` calls `setLocale` after the first render when the stored locale differs from the cookie. A better-auth `hooks.after` on `/callback/:id` could set the `SINAPPS_LOCALE` cookie at sign-in instead.
+- **MCP discovery on every turn** — each run connects to every active MCP server and lists its tools. Cache tool lists (or keep a pool) if it adds visible latency.
+- **Reasoning not replayed across turns** — encrypted reasoning values are stored in `providerMetadata` but not sent back with the history. Needed only if a provider starts requiring it.
 - **Delete `spikes/agent-sdk/`** once T11 has applied its findings (provider routing, usage summing, `mcp` option).
 
 ## Ideas

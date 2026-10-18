@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "message_one_streaming_per_conversation" ON "message" USING btree ("conversation_id") WHERE "message"."status" = 'streaming';

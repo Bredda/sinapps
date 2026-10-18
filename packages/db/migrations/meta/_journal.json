@@ -8,6 +8,20 @@
       "when": 1792228060609,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792311909734,
+      "tag": "0001_one_streaming_run",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792312414033,
+      "tag": "0002_message_clock_timestamp",
+      "breakpoints": true
     }
   ]
 }

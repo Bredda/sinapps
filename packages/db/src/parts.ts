@@ -13,6 +13,7 @@ const step = z.number().int().nonnegative().optional();
 export const textPart = z.object({
   type: z.literal("text"),
   id: z.string(),
+  step,
   text: z.string(),
 });
 

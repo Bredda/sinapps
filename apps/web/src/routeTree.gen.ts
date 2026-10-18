@@ -14,6 +14,7 @@ import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as ApiAgentRouteImport } from './routes/api/agent'
 import { Route as AppCConversationIdRouteImport } from './routes/_app/c/$conversationId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -41,6 +42,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiAgentRoute = ApiAgentRouteImport.update({
+  id: '/api/agent',
+  path: '/api/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppCConversationIdRoute = AppCConversationIdRouteImport.update({
   id: '/c/$conversationId',
   path: '/c/$conversationId',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/settings': typeof AppSettingsRoute
+  '/api/agent': typeof ApiAgentRoute
   '/c/$conversationId': typeof AppCConversationIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/settings': typeof AppSettingsRoute
+  '/api/agent': typeof ApiAgentRoute
   '/': typeof AppIndexRoute
   '/c/$conversationId': typeof AppCConversationIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/api/agent': typeof ApiAgentRoute
   '/_app/': typeof AppIndexRoute
   '/_app/c/$conversationId': typeof AppCConversationIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/login'
     | '/settings'
+    | '/api/agent'
     | '/c/$conversationId'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/login'
     | '/settings'
+    | '/api/agent'
     | '/'
     | '/c/$conversationId'
     | '/api/auth/$'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '/forbidden'
     | '/login'
     | '/_app/settings'
+    | '/api/agent'
     | '/_app/'
     | '/_app/c/$conversationId'
     | '/api/auth/$'
@@ -110,6 +122,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ForbiddenRoute: typeof ForbiddenRoute
   LoginRoute: typeof LoginRoute
+  ApiAgentRoute: typeof ApiAgentRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -150,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/agent': {
+      id: '/api/agent'
+      path: '/api/agent'
+      fullPath: '/api/agent'
+      preLoaderRoute: typeof ApiAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/c/$conversationId': {
       id: '/_app/c/$conversationId'
       path: '/c/$conversationId'
@@ -185,6 +205,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ForbiddenRoute: ForbiddenRoute,
   LoginRoute: LoginRoute,
+  ApiAgentRoute: ApiAgentRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

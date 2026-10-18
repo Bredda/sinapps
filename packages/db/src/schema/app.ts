@@ -1,5 +1,16 @@
 import { sql } from "drizzle-orm";
-import { index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import type { MessagePart } from "../parts";
 import { user } from "./auth";
 
@@ -61,7 +72,15 @@ export const message = pgTable(
     tokensIn: integer("tokens_in"),
     tokensOut: integer("tokens_out"),
     costUsd: numeric("cost_usd", { precision: 12, scale: 8, mode: "number" }),
-    createdAt: timestamps.createdAt,
+    // clock_timestamp(), not now(): a turn inserts the user and assistant rows in one
+    // transaction, and now() would give them the same time (and an undefined order).
+    createdAt: timestamp("created_at", { withTimezone: true }).default(sql`clock_timestamp()`).notNull(),
   },
-  (table) => [index("message_conversation_created_idx").on(table.conversationId, table.createdAt)],
+  (table) => [
+    index("message_conversation_created_idx").on(table.conversationId, table.createdAt),
+    // At most one agent run per conversation: the streaming assistant row is the lock.
+    uniqueIndex("message_one_streaming_per_conversation")
+      .on(table.conversationId)
+      .where(sql`${table.status} = 'streaming'`),
+  ],
 );

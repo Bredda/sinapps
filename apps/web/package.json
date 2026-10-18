@@ -8,13 +8,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "pnpm i18n:compile && tsc --noEmit",
-    "i18n:compile": "node scripts/i18n-compile.ts"
+    "i18n:compile": "node scripts/i18n-compile.ts",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@ag-ui/core": "1.0.3",
+    "@ag-ui/encoder": "1.0.3",
+    "@modelcontextprotocol/client": "2.3.1",
     "@sinapps/db": "workspace:*",
     "@sinapps/ui": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/ai": "0.69.0",
+    "@tanstack/ai-mcp": "0.9.0",
     "@tanstack/ai-openrouter": "0.22.0",
     "@tanstack/react-router": "1.170.45",
     "@tanstack/react-start": "1.169.3",
@@ -22,6 +27,7 @@
     "drizzle-orm": "0.45.4",
     "lucide-react": "1.59.0",
     "next-themes": "0.4.6",
+    "partial-json": "0.1.7",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
@@ -36,6 +42,7 @@
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
   }
 }

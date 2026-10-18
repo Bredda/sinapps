@@ -292,7 +292,8 @@ The only argument for Next would be "default path of the AI Elements examples wi
 
 ### 3.4 Message model & chat rendering
 
-- **In-house, SDK-independent part format.** A Zod discriminated union `MessagePart` (in `packages/db`): `text`, `reasoning`, `tool-call`, `widget`, `source`, `image`, `question`, `error`, `marker`. This is what gets persisted (`message.parts`) and rendered. A single adapter converts TanStack AI messages into this format. Had the spike led to fallback B, only this adapter would change.
+- **In-house, SDK-independent part format.** A Zod discriminated union `MessagePart` (in `packages/db`): `text`, `reasoning`, `tool-call`, `widget`, `source`, `image`, `question`, `error`, `marker`. It is the single source of truth: persisted in `message.parts` (one row per turn) and rendered as is. `@tanstack/ai-persistence` is not used.
+- **One projection, both sides.** `/api/agent` normalizes TanStack AI's chunks into a strict AG-UI run (`apps/web/src/server/agent/normalize.ts`): one `RUN_STARTED`/`RUN_FINISHED` pair with our ids, each model call as a `step-N` `STEP_STARTED`/`STEP_FINISHED` pair, tool display data in `TOOL_CALL_START.metadata`, usage and cost on `RUN_FINISHED`. A pure reducer (`apps/web/src/lib/agent-run.ts`) folds those events into parts: the server to persist, the browser to render live. The model transcript is rebuilt from parts for each turn (`history.server.ts`).
 - **AG-UI → parts mapping:**
 
   | AG-UI events | Part |
@@ -309,7 +310,7 @@ The only argument for Next would be "default path of the AI Elements examples wi
   - a second registry, `toolRenderers`, allows dedicated rendering per tool (e.g. `tavily-search` → result list), with a generic JSON fallback;
   - adding a part type or a tool renderer never requires touching the chat core.
 - **Streaming Markdown**: Streamdown (used by AI Elements), which tolerates incomplete markdown while streaming. Highlighting through Code Block.
-- **Persistence**: parts are persisted at the end of each step, not on every token, with a run status. A reload during a run shows the parts already persisted and an "interrupted answer" marker in v1. Stream resumption (TanStack AI durability adapters) is planned for v2.
+- **Persistence and run lock**: the assistant row is inserted as `streaming` when the run starts. A partial unique index allows one `streaming` row per conversation, so it doubles as the run lock (409 otherwise), with no in-memory state across pods. Parts are saved at the end of each step and when the run ends (`done`, `error`, or `interrupted` with a marker when the client goes away). A row left `streaming` by a crashed process is released after the longest model timeout. Stream resumption (TanStack AI durability adapters) is planned for v2.
 - **Fixtures**: a `/dev/parts` page (dev only) that renders every part in each of its states from fixtures. It serves as a visual catalog and as the base for Playwright tests (screenshots).
 
 ### 3.5 Stack

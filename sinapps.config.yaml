@@ -1,6 +1,16 @@
 # Sinapps runtime configuration (dev defaults).
 # In Kubernetes the same structure comes from the Helm values (ConfigMap); see SINAPPS_CONFIG.
 
+mcpServers:
+  # Hosted web search. Disabled with a warning when TAVILY_API_KEY is not set.
+  - id: tavily
+    label: Web search (Tavily)
+    url: https://mcp.tavily.com/mcp/
+    headers:
+      Authorization: Bearer ${TAVILY_API_KEY}
+    optional: true
+    enabledByDefault: true
+
 models:
   default: anthropic/claude-sonnet-5.5
   # Side tasks such as conversation titles.
@@ -20,6 +30,8 @@ models:
     - id: deepseek/deepseek-v4.1-flash
       label: DeepSeek V4.1 Flash
       tier: budget
+      # Long reasoning on large outputs (97 s for a canvas in the spike).
+      timeoutMs: 300000
       # Only some upstream hosts stream tool arguments (spikes/agent-sdk).
       provider:
         order: [fireworks, novita, together]

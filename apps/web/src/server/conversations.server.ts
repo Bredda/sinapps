@@ -3,7 +3,7 @@ import type { MessagePart } from "@sinapps/db/parts";
 import { chat } from "@tanstack/ai";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db } from "./auth.server";
-import { config } from "./config.server";
+import { config, defaultEnabledServers } from "./config.server";
 import { textAdapter } from "./llm.server";
 
 const { conversation, message } = schema;
@@ -32,7 +32,7 @@ export async function getConversation(userId: string, conversationId: string) {
     .select()
     .from(message)
     .where(eq(message.conversationId, conversationId))
-    .orderBy(asc(message.createdAt));
+    .orderBy(asc(message.createdAt), asc(message.id));
   return { ...row, messages };
 }
 
@@ -46,7 +46,7 @@ export async function createConversation(userId: string, modelId: string, firstM
   return db.transaction(async (tx) => {
     const [created] = await tx
       .insert(conversation)
-      .values({ userId, modelId, title: fallbackTitle(firstMessage) })
+      .values({ userId, modelId, title: fallbackTitle(firstMessage), enabledServers: defaultEnabledServers() })
       .returning({ id: conversation.id });
     if (!created) throw new Error("Conversation insert returned no row");
     const parts: MessagePart[] = [{ type: "text", id: crypto.randomUUID(), text: firstMessage }];

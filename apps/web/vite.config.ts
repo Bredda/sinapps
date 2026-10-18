@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { paraglideOptions } from "./paraglide.config";
+import { paraglideOptions } from "./paraglide.config.ts";
 
 // Local dev reads the repo-root .env into process.env (server code reads it there).
 // In production the variables are injected by the environment.
