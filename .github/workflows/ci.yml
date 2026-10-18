@@ -34,6 +34,27 @@ jobs:
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm exec turbo run typecheck test build --cache-dir=.turbo/cache
 
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm infra:up # PostgreSQL and Keycloak (dev realm); the model and MCP server are mocked
+      - run: pnpm --filter @sinapps/web exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
   secrets:
     name: Gitleaks
     runs-on: ubuntu-latest

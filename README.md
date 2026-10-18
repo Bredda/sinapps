@@ -22,6 +22,10 @@ pnpm dev
 
 Dev accounts (realm `sinapps`): `alice` / `alice` (FR) and `bob` / `bob` (EN), both with the `sinapps-user` role. `carol` / `carol` lacks that role (access-denied testing).
 
+End-to-end tests (Playwright, needs `pnpm infra:up` and port 3000 free, so stop `pnpm dev`): `pnpm e2e`. They run the real
+app, PostgreSQL (a throwaway `sinapps_e2e` database) and Keycloak, with a scripted model and a mock MCP server. First time:
+`pnpm --filter @sinapps/web exec playwright install chromium`.
+
 Local observability: `pnpm infra:obs` starts Grafana (:3300) with an OTLP endpoint (:4317/:4318). Set
 `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` in `.env` and restart `pnpm dev`: traces (Tempo) and metrics
 (Prometheus) show up in Grafana → Explore. JSON logs go to stdout with the matching `trace_id`.

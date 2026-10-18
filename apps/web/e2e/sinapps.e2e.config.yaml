@@ -1,0 +1,13 @@
+# Runtime configuration for end-to-end tests: mock MCP server, no real model.
+mcpServers:
+  - id: tavily
+    label: Web search
+    url: http://localhost:3398/mcp
+    optional: true
+
+models:
+  default: mock/smart
+  utility: mock/fast
+  allowlist:
+    - { id: mock/fast, label: Mock Fast, tier: fast }
+    - { id: mock/smart, label: Mock Smart, tier: balanced }

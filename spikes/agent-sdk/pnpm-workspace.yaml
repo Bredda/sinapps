@@ -1,5 +1,0 @@
-allowBuilds:
-  '@openrouter/sdk': false
-  esbuild: true
-minimumReleaseAgeExclude:
-  - '@ag-ui/core@1.0.3'

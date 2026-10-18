@@ -1,3 +1,5 @@
+> The spike code was removed once its findings were applied (T11); it is available in the git history (before commit `ccaf140`). This file keeps the measurements the spec relies on.
+
 # Spike — Agent SDK (go/no-go)
 
 Validates TanStack AI + OpenRouter + MCP for Sinapps (see `docs/architecture-proposal.md` §3.3).

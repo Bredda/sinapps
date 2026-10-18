@@ -19,7 +19,8 @@
     "infra:obs": "docker compose -f infra/docker-compose.yml --profile observability up -d --wait",
     "db:generate": "pnpm --filter @sinapps/db db:generate",
     "db:migrate": "pnpm --filter @sinapps/db db:migrate",
-    "db:studio": "pnpm --filter @sinapps/db db:studio"
+    "db:studio": "pnpm --filter @sinapps/db db:studio",
+    "e2e": "pnpm --filter @sinapps/web e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

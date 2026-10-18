@@ -22,7 +22,6 @@ Items to revisit later: things found along the way that are unrelated to the cur
 - **Locale on a new device costs one reload** — `PreferencesSync` calls `setLocale` after the first render when the stored locale differs from the cookie. A better-auth `hooks.after` on `/callback/:id` could set the `SINAPPS_LOCALE` cookie at sign-in instead.
 - **MCP discovery on every turn** — each run connects to every active MCP server and lists its tools. Cache tool lists (or keep a pool) if it adds visible latency.
 - **Reasoning not replayed across turns** — encrypted reasoning values are stored in `providerMetadata` but not sent back with the history. Needed only if a provider starts requiring it.
-- **Delete `spikes/agent-sdk/`** once T11 has applied its findings (provider routing, usage summing, `mcp` option).
 
 - **Production start must preload instrumentation** — traces only work if the server starts with `node --import ./instrumentation.ts` (Node runs the TS file directly). Wire it into the Docker entrypoint and check the HTTP spans against the production server (M4).
 - **Dev dashboard** — ship a small Grafana dashboard (runs, cost, tokens, tool errors) provisioned in the `lgtm` compose service; the Helm ConfigMap version comes with M4.

@@ -9,5 +9,14 @@
     "allowJs": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "scripts", "instrumentation.ts", "vite.config.ts", "paraglide.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "scripts",
+    "e2e",
+    "instrumentation.ts",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "paraglide.config.ts",
+    "vitest.config.ts"
+  ]
 }

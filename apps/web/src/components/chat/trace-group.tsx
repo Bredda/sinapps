@@ -90,7 +90,9 @@ function ReasoningLine({ part, active }: { part: Extract<TracePart, { type: "rea
 function ToolLine({ part }: { part: ToolCallPart }) {
   const renderer = rendererFor(part);
   const Icon = renderer.icon;
-  const phase = part.status === "error" ? "failed" : part.status === "success" ? "done" : "running";
+  // A cancelled call is over: past tense, with "cancelled" next to it.
+  const phase =
+    part.status === "error" ? "failed" : part.status === "success" || part.status === "cancelled" ? "done" : "running";
   const name = part.title ?? humanizeToolName(part);
   const title =
     renderer.title?.(part, phase) ??
