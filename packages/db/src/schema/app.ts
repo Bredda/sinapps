@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -6,6 +6,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  pgView,
   text,
   timestamp,
   uniqueIndex,
@@ -85,4 +86,25 @@ export const message = pgTable(
       .on(table.conversationId)
       .where(sql`${table.status} = 'streaming'`),
   ],
+);
+
+/**
+ * LLM usage per user, day and model, for cost tracking. Per-user figures live here and
+ * not in metrics labels (cardinality): a read-only Grafana Postgres datasource queries it.
+ */
+export const usageByUserDay = pgView("usage_by_user_day").as((qb) =>
+  qb
+    .select({
+      userId: conversation.userId,
+      day: sql<string>`(${message.createdAt} at time zone 'UTC')::date`.as("day"),
+      modelId: message.modelId,
+      answers: sql<number>`count(*)::int`.as("answers"),
+      tokensIn: sql<number>`coalesce(sum(${message.tokensIn}), 0)::bigint`.as("tokens_in"),
+      tokensOut: sql<number>`coalesce(sum(${message.tokensOut}), 0)::bigint`.as("tokens_out"),
+      costUsd: sql<number>`coalesce(sum(${message.costUsd}), 0)`.as("cost_usd"),
+    })
+    .from(message)
+    .innerJoin(conversation, eq(conversation.id, message.conversationId))
+    .where(sql`${message.role} = 'assistant'`)
+    .groupBy(conversation.userId, sql`2`, message.modelId),
 );

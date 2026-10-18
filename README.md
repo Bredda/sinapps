@@ -22,7 +22,9 @@ pnpm dev
 
 Dev accounts (realm `sinapps`): `alice` / `alice` (FR) and `bob` / `bob` (EN), both with the `sinapps-user` role. `carol` / `carol` lacks that role (access-denied testing).
 
-Local observability: `pnpm infra:obs` (Grafana on :3300, OTLP on :4317/:4318).
+Local observability: `pnpm infra:obs` starts Grafana (:3300) with an OTLP endpoint (:4317/:4318). Set
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` in `.env` and restart `pnpm dev`: traces (Tempo) and metrics
+(Prometheus) show up in Grafana → Explore. JSON logs go to stdout with the matching `trace_id`.
 
 ## Conventions
 

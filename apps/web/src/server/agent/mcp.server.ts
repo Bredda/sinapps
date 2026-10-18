@@ -1,6 +1,8 @@
 import { createMCPClient, type MCPClient } from "@tanstack/ai-mcp";
 import type { ToolCallMetadata } from "@/lib/agent-run";
 import { activeMcpServers } from "../config.server";
+import { logger } from "../logger.server";
+import { tracer } from "../telemetry.server";
 
 export interface McpSession {
   clients: MCPClient[];
@@ -13,12 +15,27 @@ export interface McpSession {
  * Connects the MCP servers active in a conversation. A server that is down is
  * skipped (logged) rather than failing the whole turn.
  */
-export async function openMcpSession(enabledOptional: readonly string[]): Promise<McpSession> {
+export function openMcpSession(enabledOptional: readonly string[]): Promise<McpSession> {
+  const servers = activeMcpServers(enabledOptional);
+  return tracer.startActiveSpan(
+    "mcp.session",
+    { attributes: { "sinapps.mcp.servers": servers.map((s) => s.id) } },
+    async (span) => {
+      try {
+        return await connect(servers);
+      } finally {
+        span.end();
+      }
+    },
+  );
+}
+
+async function connect(servers: ReturnType<typeof activeMcpServers>): Promise<McpSession> {
   const clients: MCPClient[] = [];
   const toolMeta = new Map<string, ToolCallMetadata>();
 
   await Promise.all(
-    activeMcpServers(enabledOptional).map(async (server) => {
+    servers.map(async (server) => {
       try {
         const client = await createMCPClient({
           transport: { type: "http", url: server.url, headers: server.headers },
@@ -33,7 +50,7 @@ export async function openMcpSession(enabledOptional: readonly string[]): Promis
         }
         clients.push(client);
       } catch (error) {
-        console.warn(`[mcp] server "${server.id}" unavailable, continuing without it`, error);
+        logger.warn({ err: error, server: server.id }, "MCP server unavailable, continuing without it");
       }
     }),
   );

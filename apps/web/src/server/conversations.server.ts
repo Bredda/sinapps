@@ -5,6 +5,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db } from "./auth.server";
 import { config, defaultEnabledServers } from "./config.server";
 import { textAdapter } from "./llm.server";
+import { llmMiddleware } from "./telemetry.server";
 
 const { conversation, message } = schema;
 
@@ -112,6 +113,7 @@ export async function generateTitle(userId: string, conversationId: string): Pro
     adapter: textAdapter(config.models.utility ?? config.models.default),
     systemPrompts: [TITLE_PROMPT],
     messages: [{ role: "user", content: text.slice(0, 2000) }],
+    middleware: llmMiddleware(),
     stream: false,
   });
   const title = result.text

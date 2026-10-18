@@ -415,14 +415,18 @@ Models and MCP servers are **not** stored in the database: they come from config
 
 ### 3.11 Observability
 
-- **Traces**: HTTP, agent run, LLM call (`gen_ai.request.model`, `gen_ai.usage.*`), MCP calls, widget rendering (optional front-end spans).
-- **Metrics** (OTLP):
-  - `sinapps_llm_tokens_total{model,direction}`, `sinapps_llm_cost_usd_total{model}`, `sinapps_llm_latency`;
-  - `sinapps_tool_calls_total{server,tool,status}`;
-  - `sinapps_widget_render_errors_total{kind}`, `sinapps_autofix_total{outcome}`.
-- **No `user_id` label** (cardinality). Per-user cost is read in SQL: a `usage_by_user_day` view, usable through a read-only Grafana Postgres datasource.
-- **JSON logs** on stdout, correlated by `trace_id`.
-- **Chart**: OTLP endpoint as a value, Grafana dashboard shipped as a ConfigMap (`grafana_dashboard` label), can be disabled.
+The SDK (`apps/web/instrumentation.ts`) is loaded with `node --import` before the app and only starts when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; the rest is standard `OTEL_*` configuration. Application code only uses `@opentelemetry/api`, so it is a no-op without the SDK.
+
+- **Traces**: one tree per request: `POST /api/agent` → better-auth and `pg` spans → `agent.run` (user, conversation, model, tokens, cost, outcome) → `mcp.session`, `chat <model>` → `chat <model> #n` (one per ReAct step) → `execute_tool <name>`. LLM and tool spans come from TanStack AI's OpenTelemetry middleware (`gen_ai.*` conventions). Prompts and completions are **not** recorded unless `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true`. Server functions are named after the function (`POST /_serverFn/renameConversationFn`), ids in paths become `:id`. Widget rendering spans (front end) come with the widgets (M1).
+- **Metrics** (OTLP; Prometheus names in parentheses):
+  - standard `gen_ai.client.token.usage{gen_ai.token.type}` and `gen_ai.client.operation.duration` (tokens and latency per model);
+  - `sinapps.llm.cost{gen_ai.request.model}` in USD (`sinapps_llm_cost_USD_total`);
+  - `sinapps.tool.calls{server,tool,status}` (`sinapps_tool_calls_total`);
+  - `sinapps.agent.runs{model,outcome}` and `sinapps.agent.run.duration` (outcome: `done`, `error`, `interrupted`, `timeout`);
+  - with the widgets (M1/M2): `sinapps.widget.render_errors{kind}`, `sinapps.autofix{outcome}`.
+- **No `user_id` label** (cardinality). Per-user cost is read in SQL from the `usage_by_user_day` view (user, day, model: answers, tokens, cost), usable through a read-only Grafana Postgres datasource. Stopped runs record no usage yet (backlog).
+- **JSON logs** on stdout (pino), each line carries `trace_id` and `span_id` when logged inside a span; the cluster's log collector ships them. `LOG_LEVEL` sets the level.
+- **Chart** (M4): OTLP endpoint as a value, Grafana dashboard shipped as a ConfigMap (`grafana_dashboard` label), can be disabled.
 
 ### 3.12 Local development
 

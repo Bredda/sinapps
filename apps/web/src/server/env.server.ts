@@ -26,6 +26,7 @@ const envSchema = z.object({
   AUTH_REQUIRED_ROLE: z.string().optional(),
   /** Path to the runtime configuration file (models, MCP servers). */
   SINAPPS_CONFIG: z.string().min(1),
+  LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"]).default("info"),
   /** Optional in dev so the app boots without LLM access; LLM features then fail with a clear error. */
   OPENROUTER_API_KEY: isProduction ? z.string().min(1) : z.string().min(1).optional(),
 });

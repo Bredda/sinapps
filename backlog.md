@@ -24,6 +24,9 @@ Items to revisit later: things found along the way that are unrelated to the cur
 - **Reasoning not replayed across turns** — encrypted reasoning values are stored in `providerMetadata` but not sent back with the history. Needed only if a provider starts requiring it.
 - **Delete `spikes/agent-sdk/`** once T11 has applied its findings (provider routing, usage summing, `mcp` option).
 
+- **Production start must preload instrumentation** — traces only work if the server starts with `node --import ./instrumentation.ts` (Node runs the TS file directly). Wire it into the Docker entrypoint and check the HTTP spans against the production server (M4).
+- **Dev dashboard** — ship a small Grafana dashboard (runs, cost, tokens, tool errors) provisioned in the `lgtm` compose service; the Helm ConfigMap version comes with M4.
+
 ## Ideas
 
 - **Keycloak login page in the app locale** — pass `ui_locales` (current Paraglide locale) on sign-in; today Keycloak uses its own cookie/Accept-Language.

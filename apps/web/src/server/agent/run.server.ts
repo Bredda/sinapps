@@ -1,12 +1,15 @@
 import { type AGUIEvent, EventType } from "@ag-ui/core";
+import { context, SpanStatusCode, trace } from "@opentelemetry/api";
 import { schema } from "@sinapps/db";
 import type { MessagePart } from "@sinapps/db/parts";
-import { chat, type ModelMessage } from "@tanstack/ai";
+import { type ChatMiddleware, chat, type ModelMessage } from "@tanstack/ai";
 import { and, asc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { initialRunState, interruptRun, type RunState, reduceRunEvent, type ToolCallMetadata } from "@/lib/agent-run";
 import { db } from "../auth.server";
 import { config, getModel, type ModelConfig } from "../config.server";
 import { textAdapter } from "../llm.server";
+import { logger } from "../logger.server";
+import { llmMiddleware, recordAgentRun, recordToolCall, tracer, withContext } from "../telemetry.server";
 import { toModelMessages } from "./history.server";
 import { type McpSession, openMcpSession } from "./mcp.server";
 import { createNormalizer, type RunTotals } from "./normalize";
@@ -183,9 +186,27 @@ class ProviderError extends Error {
 /**
  * Runs the agent loop and yields a strict AG-UI event stream. The assistant row is
  * updated at every step and finalized whatever happens (done, error, or interrupted
- * when the client goes away).
+ * when the client goes away). The whole run is one `agent.run` span, a child of the
+ * HTTP request's span.
  */
-export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): AsyncGenerator<AGUIEvent> {
+export function runAgent(run: PreparedRun, clientSignal: AbortSignal): AsyncGenerator<AGUIEvent> {
+  const span = tracer.startSpan("agent.run", {
+    attributes: {
+      "gen_ai.request.model": run.model.id,
+      "enduser.id": run.request.userId,
+      "sinapps.conversation.id": run.request.conversationId,
+      "sinapps.run.id": run.request.runId,
+      "sinapps.message.id": run.assistantMessageId,
+    },
+  });
+  return withContext(trace.setSpan(context.active(), span), executeRun(run, clientSignal, span));
+}
+
+async function* executeRun(
+  run: PreparedRun,
+  clientSignal: AbortSignal,
+  span: ReturnType<typeof tracer.startSpan>,
+): AsyncGenerator<AGUIEvent> {
   const { request, model } = run;
   // Filled once MCP servers are connected; RUN_STARTED goes out before that.
   const toolMeta = new Map<string, ToolCallMetadata>();
@@ -199,6 +220,7 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
   const totals: RunTotals = { model: model.id, inputTokens: 0, outputTokens: 0, costUsd: 0 };
   let state = initialRunState();
   let mcp: McpSession | undefined;
+  let timedOut = false;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort("timeout"), model.timeoutMs);
@@ -215,6 +237,15 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
     mcp = await openMcpSession(run.enabledServers);
     for (const [name, meta] of mcp.toolMeta) toolMeta.set(name, meta);
 
+    const usage: ChatMiddleware = {
+      name: "sinapps-usage",
+      // Fires once per model call, i.e. once per ReAct step.
+      onUsage: (_ctx, info) => {
+        totals.inputTokens += info.promptTokens ?? 0;
+        totals.outputTokens += info.completionTokens ?? 0;
+        totals.costUsd += info.cost ?? 0;
+      },
+    };
     const stream = chat({
       adapter: textAdapter(model.id),
       systemPrompts: [systemPrompt(request.locale)],
@@ -224,16 +255,7 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
       // Narrowed per model by TanStack's static catalog; ours come from configuration.
       ...(model.reasoning && { reasoning: model.reasoning as never }),
       ...(model.provider && { modelOptions: { provider: model.provider } as never }),
-      middleware: [
-        {
-          // Fires once per model call, i.e. once per ReAct step.
-          onUsage: (_ctx, usage) => {
-            totals.inputTokens += usage.promptTokens ?? 0;
-            totals.outputTokens += usage.completionTokens ?? 0;
-            totals.costUsd += usage.cost ?? 0;
-          },
-        },
-      ],
+      middleware: [...llmMiddleware(), usage],
     });
 
     for await (const chunk of stream) {
@@ -250,9 +272,11 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
     if (reason === "client") {
       state = interruptRun(state);
     } else if (reason === "timeout") {
+      timedOut = true;
       yield* apply(normalizer.fail("The model took too long to answer.", "timeout"));
     } else {
-      console.error("[agent] run failed", { conversationId: request.conversationId, error });
+      logger.error({ err: error, conversationId: request.conversationId }, "agent run failed");
+      span.recordException(error as Error);
       const code = error instanceof ProviderError ? error.code : "agent_error";
       yield* apply(normalizer.fail("The model provider returned an error. Please try again.", code));
     }
@@ -261,7 +285,51 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
     clientSignal.removeEventListener("abort", onClientGone);
     // The consumer stopped reading (client gone) before the run ended.
     if (state.status === "streaming") state = interruptRun(state);
-    await persist(run, state, totals, startedAt);
-    await mcp?.close();
+    try {
+      await persist(run, state, totals, startedAt);
+      await mcp?.close();
+    } finally {
+      finishTelemetry(run, state, totals, Date.now() - startedAt, span, timedOut);
+    }
   }
+}
+
+function finishTelemetry(
+  run: PreparedRun,
+  state: RunState,
+  totals: RunTotals,
+  durationMs: number,
+  span: ReturnType<typeof tracer.startSpan>,
+  timedOut: boolean,
+) {
+  const outcome = timedOut ? "timeout" : state.status;
+  for (const part of state.parts) {
+    if (part.type === "tool-call") {
+      const server = part.serverId ?? "unknown";
+      // Model-visible names are `${serverId}_${tool}`: the label is the tool's own name.
+      const tool = part.toolName.startsWith(`${server}_`) ? part.toolName.slice(server.length + 1) : part.toolName;
+      recordToolCall({ server, tool, status: part.status });
+    }
+  }
+  recordAgentRun({ model: run.model.id, outcome }, durationMs);
+  span.setAttributes({
+    "sinapps.run.outcome": outcome,
+    "gen_ai.usage.input_tokens": totals.inputTokens,
+    "gen_ai.usage.output_tokens": totals.outputTokens,
+    "sinapps.run.cost_usd": totals.costUsd,
+  });
+  if (state.status === "error") span.setStatus({ code: SpanStatusCode.ERROR, message: outcome });
+  span.end();
+  logger.info(
+    {
+      conversationId: run.request.conversationId,
+      model: run.model.id,
+      outcome,
+      durationMs,
+      tokensIn: totals.inputTokens,
+      tokensOut: totals.outputTokens,
+      costUsd: totals.costUsd,
+    },
+    "agent run finished",
+  );
 }

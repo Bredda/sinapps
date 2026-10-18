@@ -29,6 +29,13 @@
       "when": 1792313499875,
       "tag": "0003_message_duration",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792315802209,
+      "tag": "0004_usage_by_user_day",
+      "breakpoints": true
     }
   ]
 }

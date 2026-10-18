@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { z } from "zod";
 import { env } from "./env.server";
+import { logger } from "./logger.server";
 
 const modelSchema = z.object({
   /** OpenRouter model slug. */
@@ -76,7 +77,10 @@ function resolveSecrets(server: McpServerConfig): McpServerConfig | null {
   for (const [key, raw] of Object.entries(server.headers)) {
     const value = interpolate(raw);
     if (value === null) {
-      console.warn(`[config] MCP server "${server.id}" disabled: ${raw} references an unset environment variable`);
+      logger.warn(
+        { server: server.id, variable: raw },
+        "MCP server disabled: it references an unset environment variable",
+      );
       return null;
     }
     headers[key] = value;
