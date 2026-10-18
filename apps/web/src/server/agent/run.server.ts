@@ -28,10 +28,15 @@ export interface RunRequest {
   conversationId: string;
   runId: string;
   locale: string;
-  /** New user (or widget) message; omitted to answer the trailing user message. */
-  newMessage?: { text: string; source: "user" | "app" };
+  /**
+   * New user (or widget) message; omitted to answer the trailing user message.
+   * `id`: the client's id, so the optimistic copy and the stored row match.
+   */
+  newMessage?: { id?: string; text: string; source: "user" | "app" };
   /** Drop the trailing assistant answer and answer again. */
   regenerate?: boolean;
+  /** Replace the last user message (and what follows) with `newMessage`. */
+  edit?: boolean;
 }
 
 export interface PreparedRun {
@@ -45,8 +50,14 @@ export interface PreparedRun {
 /** A streaming row older than any run can last was left behind by a crashed process. */
 const STALE_RUN_MS = Math.max(...config.models.allowlist.map((model) => model.timeoutMs)) + 60_000;
 
-const isUniqueViolation = (error: unknown): boolean =>
-  (error as { code?: string }).code === "23505" || (error as { cause?: { code?: string } }).cause?.code === "23505";
+type PgError = { code?: string; constraint?: string };
+
+/** The run lock is taken: another streaming row exists (a client-chosen id clash is a plain 400). */
+const lockConflict = (error: unknown): "locked" | "duplicate" | null => {
+  const pg = ((error as { cause?: PgError }).cause ?? error) as PgError;
+  if (pg.code !== "23505") return null;
+  return pg.constraint === "message_one_streaming_per_conversation" ? "locked" : "duplicate";
+};
 
 /**
  * Validates and records the turn, then takes the conversation's run lock by inserting
@@ -86,27 +97,32 @@ export async function prepareRun(request: RunRequest): Promise<PreparedRun> {
         .where(eq(message.conversationId, owned.id))
         .orderBy(asc(message.createdAt), asc(message.id));
 
-      if (request.regenerate) {
-        // Rows are in creation order: the answers are whatever follows the last user message.
-        const lastUser = rows.findLastIndex((row) => row.role === "user");
-        const answers = lastUser === -1 ? [] : rows.slice(lastUser + 1);
-        if (answers.length > 0) {
-          await tx.delete(message).where(
-            inArray(
-              message.id,
-              answers.map((row) => row.id),
-            ),
-          );
-        }
-      } else if (request.newMessage) {
+      // Rows are in creation order: the answers are whatever follows the last user message.
+      const lastUser = rows.findLastIndex((row) => row.role === "user");
+      const dropFrom = request.edit ? lastUser : request.regenerate ? lastUser + 1 : -1;
+      if (request.edit && (lastUser === -1 || !request.newMessage)) {
+        throw new RunRejected(400, "Nothing to edit: send the new text of the last user message");
+      }
+      const dropped = dropFrom === -1 ? [] : rows.slice(dropFrom);
+      if (dropped.length > 0) {
+        await tx.delete(message).where(
+          inArray(
+            message.id,
+            dropped.map((row) => row.id),
+          ),
+        );
+      }
+
+      if (request.newMessage && !request.regenerate) {
         const parts: MessagePart[] = [{ type: "text", id: crypto.randomUUID(), text: request.newMessage.text }];
         await tx.insert(message).values({
+          ...(request.newMessage.id && { id: request.newMessage.id }),
           conversationId: owned.id,
           role: "user",
           parts,
           source: request.newMessage.source,
         });
-      } else if (rows.at(-1)?.role !== "user") {
+      } else if (!request.regenerate && rows.at(-1)?.role !== "user") {
         throw new RunRejected(400, "Nothing to answer: the conversation doesn't end with a user message");
       }
 
@@ -118,7 +134,9 @@ export async function prepareRun(request: RunRequest): Promise<PreparedRun> {
       return assistant?.id;
     })
     .catch((error: unknown) => {
-      if (isUniqueViolation(error)) throw new RunRejected(409, "A run is already in progress for this conversation");
+      const conflict = lockConflict(error);
+      if (conflict === "locked") throw new RunRejected(409, "A run is already in progress for this conversation");
+      if (conflict === "duplicate") throw new RunRejected(400, "Message id already used");
       throw error;
     });
   if (!assistantMessageId) throw new Error("Assistant message insert returned no row");
@@ -139,7 +157,7 @@ export async function prepareRun(request: RunRequest): Promise<PreparedRun> {
   };
 }
 
-async function persist(run: PreparedRun, state: RunState, totals: RunTotals) {
+async function persist(run: PreparedRun, state: RunState, totals: RunTotals, startedAt: number) {
   await db
     .update(message)
     .set({
@@ -148,6 +166,7 @@ async function persist(run: PreparedRun, state: RunState, totals: RunTotals) {
       tokensIn: totals.inputTokens,
       tokensOut: totals.outputTokens,
       costUsd: totals.costUsd,
+      durationMs: Date.now() - startedAt,
     })
     .where(eq(message.id, run.assistantMessageId));
 }
@@ -170,7 +189,13 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
   const { request, model } = run;
   // Filled once MCP servers are connected; RUN_STARTED goes out before that.
   const toolMeta = new Map<string, ToolCallMetadata>();
-  const normalizer = createNormalizer({ threadId: request.conversationId, runId: request.runId, toolMeta });
+  const normalizer = createNormalizer({
+    threadId: request.conversationId,
+    runId: request.runId,
+    messageId: run.assistantMessageId,
+    toolMeta,
+  });
+  const startedAt = Date.now();
   const totals: RunTotals = { model: model.id, inputTokens: 0, outputTokens: 0, costUsd: 0 };
   let state = initialRunState();
   let mcp: McpSession | undefined;
@@ -215,7 +240,7 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
       if (chunk.type === "RUN_ERROR") throw new ProviderError(chunk.message, chunk.code ?? "provider_error");
       for (const event of apply(normalizer.push(chunk))) {
         yield event;
-        if (event.type === EventType.STEP_FINISHED) await persist(run, state, totals);
+        if (event.type === EventType.STEP_FINISHED) await persist(run, state, totals, startedAt);
       }
     }
     if (controller.signal.aborted) throw controller.signal.reason;
@@ -236,7 +261,7 @@ export async function* runAgent(run: PreparedRun, clientSignal: AbortSignal): As
     clientSignal.removeEventListener("abort", onClientGone);
     // The consumer stopped reading (client gone) before the run ended.
     if (state.status === "streaming") state = interruptRun(state);
-    await persist(run, state, totals);
+    await persist(run, state, totals, startedAt);
     await mcp?.close();
   }
 }

@@ -42,11 +42,16 @@ export function fallbackTitle(text: string): string {
   return oneLine.length > 60 ? `${oneLine.slice(0, 57)}…` : oneLine;
 }
 
-export async function createConversation(userId: string, modelId: string, firstMessage: string) {
+export async function createConversation(
+  userId: string,
+  modelId: string,
+  firstMessage: string,
+  enabledServers = defaultEnabledServers(),
+) {
   return db.transaction(async (tx) => {
     const [created] = await tx
       .insert(conversation)
-      .values({ userId, modelId, title: fallbackTitle(firstMessage), enabledServers: defaultEnabledServers() })
+      .values({ userId, modelId, title: fallbackTitle(firstMessage), enabledServers })
       .returning({ id: conversation.id });
     if (!created) throw new Error("Conversation insert returned no row");
     const parts: MessagePart[] = [{ type: "text", id: crypto.randomUUID(), text: firstMessage }];
@@ -59,6 +64,20 @@ export async function renameConversation(userId: string, conversationId: string,
   const updated = await db
     .update(conversation)
     .set({ title })
+    .where(ownedBy(userId, conversationId))
+    .returning({ id: conversation.id });
+  return updated.length > 0;
+}
+
+/** Model and connectors apply from the next turn on. */
+export async function updateConversationSettings(
+  userId: string,
+  conversationId: string,
+  settings: { modelId?: string; enabledServers?: string[] },
+) {
+  const updated = await db
+    .update(conversation)
+    .set(settings)
     .where(ownedBy(userId, conversationId))
     .returning({ id: conversation.id });
   return updated.length > 0;

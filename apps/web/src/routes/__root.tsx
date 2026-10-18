@@ -1,10 +1,11 @@
+import { Toaster } from "@sinapps/ui/components/sonner";
 import { TooltipProvider } from "@sinapps/ui/components/tooltip";
-import appCss from "@sinapps/ui/globals.css?url";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { m } from "@/paraglide/messages.js";
 import { getLocale } from "@/paraglide/runtime.js";
+import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -29,6 +30,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
         </ThemeProvider>
         <Scripts />
       </body>

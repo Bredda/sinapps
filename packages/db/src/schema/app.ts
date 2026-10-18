@@ -72,6 +72,8 @@ export const message = pgTable(
     tokensIn: integer("tokens_in"),
     tokensOut: integer("tokens_out"),
     costUsd: numeric("cost_usd", { precision: 12, scale: 8, mode: "number" }),
+    /** Wall-clock time of the agent run that produced an assistant message. */
+    durationMs: integer("duration_ms"),
     // clock_timestamp(), not now(): a turn inserts the user and assistant rows in one
     // transaction, and now() would give them the same time (and an undefined order).
     createdAt: timestamp("created_at", { withTimezone: true }).default(sql`clock_timestamp()`).notNull(),

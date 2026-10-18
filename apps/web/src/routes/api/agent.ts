@@ -11,6 +11,8 @@ import { auth, hasRequiredRole } from "@/server/auth.server";
 const forwardedPropsSchema = z
   .object({
     regenerate: z.boolean().optional(),
+    /** Replace the last user message with the one sent. */
+    edit: z.boolean().optional(),
     /** "app": the message was sent by a widget (MCP Apps ui/message). */
     source: z.enum(["user", "app"]).optional(),
   })
@@ -72,9 +74,15 @@ export const Route = createFileRoute("/api/agent")({
             runId: input.data.runId,
             locale: getLocale(),
             regenerate: forwarded.data.regenerate,
+            edit: forwarded.data.edit,
             newMessage:
               last && typeof last.content === "string"
-                ? { text: last.content.trim(), source: forwarded.data.source ?? "user" }
+                ? {
+                    // Kept when it is a valid row id: the browser's optimistic copy then matches the stored one.
+                    id: z.uuid().safeParse(last.id).data,
+                    text: last.content.trim(),
+                    source: forwarded.data.source ?? "user",
+                  }
                 : undefined,
           });
           return sseResponse(runAgent(run, request.signal), request.headers.get("accept"));

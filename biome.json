@@ -50,13 +50,19 @@
   },
   "overrides": [
     {
-      "includes": ["packages/ui/src/components/**"],
+      "includes": ["packages/ui/src/components/**", "packages/ui/src/lib/highlighter.tsx"],
       "linter": {
         "rules": {
+          "a11y": {
+            "noNoninteractiveTabindex": "off",
+            "useKeyWithClickEvents": "off",
+            "useSemanticElements": "off"
+          },
           "correctness": {
             "useExhaustiveDependencies": "off"
           },
           "suspicious": {
+            "noArrayIndexKey": "off",
             "noDocumentCookie": "off"
           }
         }

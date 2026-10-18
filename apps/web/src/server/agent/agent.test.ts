@@ -50,6 +50,7 @@ function normalize(chunks: StreamChunk[]): AGUIEvent[] {
   const normalizer = createNormalizer({
     threadId: "conv-1",
     runId: "run-1",
+    messageId: "msg-1",
     toolMeta: new Map([["demo_get_offers", { title: "Offers", serverId: "demo" }]]),
   });
   return [
@@ -124,6 +125,22 @@ describe("run reducer", () => {
     expect(stopped.status).toBe("interrupted");
     expect(stopped.parts.find((part) => part.type === "tool-call")).toMatchObject({ status: "cancelled" });
     expect(stopped.parts.at(-1)).toMatchObject({ type: "marker", kind: "interrupted" });
+  });
+
+  it("records the persisted message announced by RUN_STARTED", () => {
+    expect(state.messageId).toBe("msg-1");
+  });
+
+  it("marks failed tool executions as errors", () => {
+    // TanStack AI flags them in its own metadata namespace, with `{ error }` content.
+    const failedTurn = tanstackTurn.map((chunk) =>
+      chunk.type === "TOOL_CALL_RESULT"
+        ? { ...chunk, content: '{"error":"rate limited"}', metadata: { tanstack: { state: "output-error" } } }
+        : chunk,
+    ) as StreamChunk[];
+    const events = normalize(failedTurn);
+    expect(events.find((e) => e.type === "TOOL_CALL_RESULT")).toMatchObject({ metadata: { isError: true } });
+    expect(foldRunEvents(events).parts[1]).toMatchObject({ status: "error", error: "rate limited" });
   });
 
   it("turns RUN_ERROR into a retryable error part", () => {

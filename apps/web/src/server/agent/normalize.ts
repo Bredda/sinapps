@@ -1,6 +1,6 @@
 import { type AGUIEvent, EventType } from "@ag-ui/core";
 import type { StreamChunk } from "@tanstack/ai";
-import type { RunFinishedMetadata, ToolCallMetadata } from "@/lib/agent-run";
+import type { RunFinishedMetadata, RunStartedMetadata, ToolCallMetadata, ToolResultMetadata } from "@/lib/agent-run";
 
 export interface RunTotals {
   model: string;
@@ -18,7 +18,13 @@ export interface RunTotals {
  * `step-N` STEP_STARTED/STEP_FINISHED pair (tool results stay in their step), and
  * strips provider-specific fields. Tool display metadata rides on TOOL_CALL_START.
  */
-export function createNormalizer(opts: { threadId: string; runId: string; toolMeta: Map<string, ToolCallMetadata> }) {
+export function createNormalizer(opts: {
+  threadId: string;
+  runId: string;
+  /** Persisted assistant message the run fills (lets the browser swap live parts for stored ones). */
+  messageId?: string;
+  toolMeta: Map<string, ToolCallMetadata>;
+}) {
   let step = 0;
   let stepOpen = false;
   let modelCallDone = false;
@@ -47,7 +53,8 @@ export function createNormalizer(opts: { threadId: string; runId: string; toolMe
 
   return {
     start(): AGUIEvent[] {
-      return [{ type: EventType.RUN_STARTED, threadId: opts.threadId, runId: opts.runId, timestamp: now() }];
+      const metadata: RunStartedMetadata = { messageId: opts.messageId };
+      return [{ type: EventType.RUN_STARTED, threadId: opts.threadId, runId: opts.runId, metadata, timestamp: now() }];
     },
 
     push(chunk: StreamChunk): AGUIEvent[] {
@@ -107,7 +114,10 @@ export function createNormalizer(opts: { threadId: string; runId: string; toolMe
           return [{ type: EventType.TOOL_CALL_ARGS, toolCallId: chunk.toolCallId, delta: chunk.delta, timestamp }];
         case "TOOL_CALL_END":
           return [{ type: EventType.TOOL_CALL_END, toolCallId: chunk.toolCallId, timestamp }];
-        case "TOOL_CALL_RESULT":
+        case "TOOL_CALL_RESULT": {
+          // TanStack flags failed tool executions in its own metadata namespace.
+          const failed = (chunk.metadata as { tanstack?: { state?: string } } | undefined)?.tanstack?.state;
+          const metadata: ToolResultMetadata | undefined = failed === "output-error" ? { isError: true } : undefined;
           return [
             {
               type: EventType.TOOL_CALL_RESULT,
@@ -115,9 +125,11 @@ export function createNormalizer(opts: { threadId: string; runId: string; toolMe
               toolCallId: chunk.toolCallId,
               content: chunk.content,
               role: "tool",
+              ...(metadata && { metadata }),
               timestamp,
             },
           ];
+        }
 
         case "CUSTOM":
           return chunk.name === "ui-resource"

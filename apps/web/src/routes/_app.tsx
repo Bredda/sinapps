@@ -24,12 +24,15 @@ function AppLayout() {
     <SidebarProvider>
       <PreferencesSync />
       <AppSidebar />
-      <SidebarInset>
+      {/* Fixed height: pages scroll inside (the chat transcript has its own scroller). */}
+      <SidebarInset className="h-svh overflow-hidden">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
           <SidebarTrigger aria-label={m.nav_toggle_sidebar()} />
           <Separator orientation="vertical" className="h-4" />
         </header>
-        <Outlet />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <Outlet />
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

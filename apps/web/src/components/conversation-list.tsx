@@ -70,7 +70,7 @@ function groupByBucket(conversations: ConversationSummary[]) {
 }
 
 export function ConversationList() {
-  const conversations = useLoaderData({ from: "/_app" });
+  const { conversations } = useLoaderData({ from: "/_app" });
   const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<ConversationSummary | null>(null);
   const [deleting, setDeleting] = useState<ConversationSummary | null>(null);

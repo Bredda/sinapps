@@ -1,6 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Composer } from "@/components/chat/composer";
+import { Transcript } from "@/components/chat/transcript";
+import { useConversationRun } from "@/hooks/use-conversation-run";
 import { m } from "@/paraglide/messages.js";
-import { fetchConversation } from "@/server/conversations.functions";
+import { fetchConversation, updateConversationFn } from "@/server/conversations.functions";
 
 export const Route = createFileRoute("/_app/c/$conversationId")({
   loader: ({ params }) => fetchConversation({ data: { id: params.conversationId } }),
@@ -9,17 +14,55 @@ export const Route = createFileRoute("/_app/c/$conversationId")({
   component: ConversationPage,
 });
 
-// Placeholder transcript: the agent loop (T11) and the chat UI (T12) replace it.
 function ConversationPage() {
   const conversation = Route.useLoaderData();
+  // Run state belongs to one conversation: remount when switching.
+  return <ConversationView key={conversation.id} conversation={conversation} />;
+}
+
+function ConversationView({ conversation }: { conversation: ReturnType<typeof Route.useLoaderData> }) {
+  const { models, connectors } = useLoaderData({ from: "/_app" });
+  const router = useRouter();
+  const [draft, setDraft] = useState("");
+  const run = useConversationRun(conversation, { onDraftRestore: setDraft });
+
+  const update = async (settings: { modelId?: string; enabledServers?: string[] }) => {
+    try {
+      await updateConversationFn({ data: { id: conversation.id, ...settings } });
+      await router.invalidate();
+    } catch {
+      toast.error(m.conversation_update_failed());
+    }
+  };
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
-      <h1 className="font-semibold text-lg">{conversation.title || m.conversation_untitled()}</h1>
-      {conversation.messages.map((message) => (
-        <div key={message.id} className="self-end rounded-xl bg-muted px-4 py-2 text-sm whitespace-pre-wrap">
-          {message.parts.map((part) => (part.type === "text" ? part.text : null))}
-        </div>
-      ))}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1">
+        <Transcript
+          messages={run.messages}
+          models={models}
+          idle={!run.busy}
+          liveRun={run.running}
+          onRegenerate={run.regenerate}
+          onEditLast={run.editLast}
+        />
+      </div>
+      <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+        <Composer
+          draft={draft}
+          onDraftChange={setDraft}
+          onSend={run.send}
+          onStop={run.stop}
+          running={run.running}
+          disabled={run.busy}
+          models={models}
+          modelId={conversation.modelId}
+          onModelChange={(modelId) => void update({ modelId })}
+          connectors={connectors}
+          enabledConnectors={conversation.enabledServers}
+          onConnectorsChange={(enabledServers) => void update({ enabledServers })}
+        />
+      </div>
     </div>
   );
 }

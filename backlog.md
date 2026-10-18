@@ -7,6 +7,8 @@ Items to revisit later: things found along the way that are unrelated to the cur
 - **Settings: unlabeled hidden `<select>`** — Chrome reports "No label associated with a form field" on `/settings`: it's the native `<select>` Radix Select renders for forms. Check whether `name`/`aria-*` on `SelectTrigger` or a Radix option silences it.
 - **Untranslated shadcn screen-reader labels** — `Dialog`/`Sheet` render a hard-coded sr-only "Close" (the sidebar trigger is already overridden with `aria-label`). Pass translated labels or patch the components in `packages/ui`.
 - **Rename reorders the list** — renaming bumps `conversation.updated_at`, so the conversation jumps to the top. Decide whether only new messages should count as activity (separate `last_message_at`).
+- **Stopped runs record no usage** — tokens and cost arrive with the last model call, so an interrupted answer is stored with 0 tokens / $0 although the provider bills the partial generation. Sum usage per step (`onUsage` already fires per call) and persist it on interruption, or fetch the generation cost from OpenRouter.
+- **No root `errorComponent`** — a failed loader (e.g. network error during a dev reload) shows TanStack's bare "Something went wrong!". Add a translated error component with a retry.
 - **Dev realm not re-imported** — Keycloak skips importing an existing realm, so edits to `infra/keycloak/realm/sinapps-realm.json` (e.g. English role description, `defaultLocale: en`) don't reach an existing volume. Document the reset (`infra:down` + drop `sinapps_postgres-data`) or add a `infra:reset` script.
 
 ## Features

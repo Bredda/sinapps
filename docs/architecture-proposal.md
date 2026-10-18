@@ -16,7 +16,7 @@
 | Agent SDK | **TanStack AI** (native AG-UI, first-party OpenRouter adapter, MCP client). **Spike: GO** on 2026-10-17 (`spikes/agent-sdk/README.md`) | Fallback: AI SDK 7 end to end, **without** AG-UI |
 | Web framework | **TanStack Start 1.0** (stable since 2026-10-13) | Next.js 16: adds nothing to an authenticated chat SPA, and is harder to self-host on k3s |
 | LLM | **OpenRouter** (key in env), allowlist of 4 models across cost/performance tiers, default `anthropic/claude-sonnet-5.5` (§3.10) | — |
-| UI | **shadcn/ui** (Radix): AI Elements, chat components, Trace, Code Block | Home-grown components |
+| UI | **shadcn/ui** (Radix): chat components (Message, Message Scroller, Bubble, Trace, Marker, Code Block) + Streamdown | Home-grown components |
 | Chat | Faithful rendering of the ReAct loop: typed parts (text, reasoning, tools, widgets, sources, errors…) in an SDK-independent in-house format, with a renderer registry (§2.3, §3.4) | Rendering tied to SDK types |
 | i18n & preferences | **FR + EN** (Paraglide JS), **light/dark/system** theme, in user settings | — |
 | Auth | **Keycloak (OIDC)** through **better-auth** (`genericOAuth`). Accounts are created in Keycloak, **no signup** | — |
@@ -96,12 +96,12 @@ Requirement: a **clean** agent chat that renders the ReAct loop (reasoning → a
 
 | Part | Rendering | shadcn components | States |
 |---|---|---|---|
-| Text | Streaming Markdown (GFM, tables, code with copy, KaTeX), inline citations `[n]` | AI Elements Message / Response, Code Block | streaming → final |
-| Reasoning | Expandable Trace line, with duration | AI Elements Reasoning inside Trace | streaming → done · "reasoning not displayable" when the provider encrypts it |
+| Text | Streaming Markdown (GFM, tables, code with copy, KaTeX), inline citations `[n]` | Message + Streamdown | streaming → final |
+| Reasoning | Expandable Trace line, with duration | Trace | streaming → done · "reasoning not displayable" when the provider encrypts it |
 | Generic tool call | Trace line: server icon, readable label, arguments and result in a Code Block (JSON), duration. Optional dedicated rendering per tool (e.g. search results as a list) | Trace + Code Block | streaming arguments → running → success / error / cancelled |
 | Tool call with UI | Trace line + widget in the flow | Trace + `WidgetFrame` | + widget loading / render error / auto-fix |
-| Sources | Numbered list (favicon, title, domain) linked to the text citations | AI Elements Sources / Inline citation | — |
-| Image | Thumbnail, lightbox, credit | AI Elements Image, Attachment | — |
+| Sources | Numbered list (favicon, title, domain) linked to the text citations | Source chips | — |
+| Image | Thumbnail, lightbox, credit | Attachment | — |
 | Structured question (M3, optional) | The model asks for clarification through a form (choices, fields). The answer is sent as a user message | Questionnaire | pending → answered |
 | Error | Destructive callout (provider, tool, timeout, refusal) with "Retry" | Bubble `destructive` / Alert | — |
 | Marker | System separator: model change, interruption, self-repair | Marker | — |
@@ -309,7 +309,8 @@ The only argument for Next would be "default path of the AI Elements examples wi
   - `PartRenderer` picks the component from the part type;
   - a second registry, `toolRenderers`, allows dedicated rendering per tool (e.g. `tavily-search` → result list), with a generic JSON fallback;
   - adding a part type or a tool renderer never requires touching the chat core.
-- **Streaming Markdown**: Streamdown (used by AI Elements), which tolerates incomplete markdown while streaming. Highlighting through Code Block.
+- **Streaming Markdown**: Streamdown with its `code` (Shiki) and `math` (KaTeX, `$$…$$` only so prices stay text) plugins; it tolerates incomplete markdown while streaming.
+- **Browser transport**: `@ag-ui/client` `HttpAgent` posts one run and verifies the event stream; the shared reducer folds it into parts. Live parts are swapped for the stored row (announced by `RUN_STARTED.metadata.messageId`) once it is final.
 - **Persistence and run lock**: the assistant row is inserted as `streaming` when the run starts. A partial unique index allows one `streaming` row per conversation, so it doubles as the run lock (409 otherwise), with no in-memory state across pods. Parts are saved at the end of each step and when the run ends (`done`, `error`, or `interrupted` with a marker when the client goes away). A row left `streaming` by a crashed process is released after the longest model timeout. Stream resumption (TanStack AI durability adapters) is planned for v2.
 - **Fixtures**: a `/dev/parts` page (dev only) that renders every part in each of its states from fixtures. It serves as a visual catalog and as the base for Playwright tests (screenshots).
 
@@ -320,9 +321,9 @@ The only argument for Next would be "default path of the AI Elements examples wi
 | Runtime | Node 24 LTS, pnpm 12, strict TypeScript | |
 | Monorepo | Turborepo | `dev`, `build`, `typecheck`, `test`, `--affected` |
 | Web | TanStack Start 1.x, Router, Query | server functions (CRUD), `/api/agent` route (AG-UI) |
-| Agent | `@tanstack/ai`, `@tanstack/ai-openrouter`, `@tanstack/ai-mcp`, `@tanstack/ai-react` / `ai-client` | pinned versions, see §3.3 |
+| Agent | `@tanstack/ai`, `@tanstack/ai-openrouter`, `@tanstack/ai-mcp` (server); `@ag-ui/client` (browser) | pinned versions, see §3.3 |
 | MCP Apps host | `@modelcontextprotocol/ext-apps` (AppBridge) + `apps/sandbox` | in-house `WidgetFrame` component |
-| UI | shadcn/ui (Radix): AI Elements, Message Scroller, Message, Bubble, Attachment, Trace, Code Block, Sonner | TanStack AI messages → AI Elements props adapter |
+| UI | shadcn/ui (Radix): Message Scroller, Message, Bubble, Marker, Trace, Code Block, Input Group, Sonner; Streamdown | parts → registries (`partRenderers`, `toolRenderers`) |
 | i18n | Paraglide JS (inlang) | compiled, typed, documented TanStack Start integration |
 | Theme | `next-themes`-like (`class` attribute + `system`), value persisted in preferences | |
 | T1 widgets | React + `@sinapps/ui`, single-file bundle (`vite-plugin-singlefile`) per resource | MapLibre GL, Recharts |

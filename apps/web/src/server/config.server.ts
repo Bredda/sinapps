@@ -96,6 +96,17 @@ export function listModels() {
   return config.models.allowlist.map(({ id, label, tier }) => ({ id, label, tier }));
 }
 
+/** Optional MCP servers, which the user toggles per conversation (safe to send to the browser). */
+export function listConnectors() {
+  return config.mcpServers
+    .filter((server) => server.optional)
+    .map(({ id, label, enabledByDefault }) => ({ id, label, enabledByDefault }));
+}
+
+export function isConnector(id: string): boolean {
+  return config.mcpServers.some((server) => server.optional && server.id === id);
+}
+
 /** MCP servers active in a conversation: core ones plus the optional ones it enabled. */
 export function activeMcpServers(enabledOptional: readonly string[]): McpServerConfig[] {
   return config.mcpServers.filter((server) => !server.optional || enabledOptional.includes(server.id));

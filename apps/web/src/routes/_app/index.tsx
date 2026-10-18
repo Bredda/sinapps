@@ -1,26 +1,39 @@
 import { Button } from "@sinapps/ui/components/button";
-import { Textarea } from "@sinapps/ui/components/textarea";
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowUpIcon } from "lucide-react";
-import { type FormEvent, type KeyboardEvent, useState } from "react";
+import { createFileRoute, useLoaderData, useNavigate, useRouteContext, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Composer } from "@/components/chat/composer";
 import { m } from "@/paraglide/messages.js";
 import { startConversation, titleConversation } from "@/server/conversations.functions";
 
 export const Route = createFileRoute("/_app/")({ component: ChatHome });
 
-// Minimal composer: the full prompt input (attachments, model picker, stop) comes with the chat UI (T12).
+/** Prompt ideas from the demo use cases (spec §2.6). */
+const SUGGESTIONS = [
+  m.suggestion_timekeeping,
+  m.suggestion_dice,
+  m.suggestion_compare,
+  m.suggestion_bill,
+  m.suggestion_itinerary,
+  m.suggestion_plane,
+];
+
 function ChatHome() {
   const navigate = useNavigate();
   const router = useRouter();
-  const [text, setText] = useState("");
+  const { preferences } = useRouteContext({ from: "/_app" });
+  const { models, connectors } = useLoaderData({ from: "/_app" });
+  const [draft, setDraft] = useState("");
+  const [modelId, setModelId] = useState(preferences.defaultModel);
+  const [enabled, setEnabled] = useState(() => connectors.filter((c) => c.enabledByDefault).map((c) => c.id));
   const [pending, setPending] = useState(false);
 
-  const send = async (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!text.trim() || pending) return;
+  const send = async (text: string) => {
+    if (pending) return;
     setPending(true);
     try {
-      const { id } = await startConversation({ data: { text } });
+      const { id } = await startConversation({ data: { text, modelId, enabledServers: enabled } });
+      // The conversation page answers the trailing user message.
       await navigate({ to: "/c/$conversationId", params: { conversationId: id } });
       // Navigating doesn't re-run the /_app loader: refresh it so the sidebar lists the new conversation.
       await router.invalidate();
@@ -28,41 +41,49 @@ function ChatHome() {
       void titleConversation({ data: { id } })
         .then(() => router.invalidate())
         .catch(() => {});
+    } catch {
+      setDraft(text);
+      toast.error(m.conversation_start_failed());
     } finally {
       setPending(false);
     }
   };
 
-  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) void send(event);
-  };
-
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
+    <div className="flex flex-1 flex-col items-center justify-center gap-8 p-6">
       <div className="flex flex-col gap-2 text-center">
         <h1 className="font-semibold text-2xl">{m.chat_empty_title()}</h1>
         <p className="max-w-md text-muted-foreground text-sm">{m.chat_empty_subtitle()}</p>
       </div>
-      <form onSubmit={send} className="relative w-full max-w-2xl">
-        <Textarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={m.composer_placeholder()}
-          aria-label={m.composer_placeholder()}
-          className="min-h-24 resize-none pr-12"
-          autoFocus
+      <div className="w-full max-w-2xl">
+        <Composer
+          draft={draft}
+          onDraftChange={setDraft}
+          onSend={send}
+          disabled={pending}
+          models={models}
+          modelId={modelId}
+          onModelChange={setModelId}
+          connectors={connectors}
+          enabledConnectors={enabled}
+          onConnectorsChange={setEnabled}
         />
-        <Button
-          type="submit"
-          size="icon"
-          className="absolute right-2 bottom-2"
-          disabled={!text.trim() || pending}
-          aria-label={m.composer_send()}
-        >
-          <ArrowUpIcon />
-        </Button>
-      </form>
+      </div>
+      <ul className="flex max-w-2xl flex-wrap justify-center gap-2" aria-label={m.suggestions_label()}>
+        {SUGGESTIONS.map((suggestion) => (
+          <li key={suggestion()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-auto py-1.5 whitespace-normal"
+              disabled={pending}
+              onClick={() => send(suggestion())}
+            >
+              {suggestion()}
+            </Button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

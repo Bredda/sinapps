@@ -17,6 +17,16 @@ export interface ToolCallMetadata {
   uiResourceUri?: string;
 }
 
+export interface RunStartedMetadata {
+  /** Id of the persisted assistant message this run fills. */
+  messageId?: string;
+}
+
+export interface ToolResultMetadata {
+  /** The tool ran but failed; `content` holds the error. */
+  isError?: boolean;
+}
+
 export interface RunFinishedMetadata {
   costUsd?: number;
 }
@@ -32,6 +42,8 @@ export interface RunUsage {
 export interface RunState {
   parts: MessagePart[];
   status: RunStatus;
+  /** Persisted assistant message, announced by RUN_STARTED. */
+  messageId?: string;
   /** Index of the current ReAct step (one model call). */
   step: number;
   usage?: RunUsage;
@@ -84,6 +96,9 @@ function stepFromName(stepName: string, fallback: number): number {
 export function reduceRunEvent(state: RunState, event: AGUIEvent): RunState {
   const at = event.timestamp;
   switch (event.type) {
+    case EventType.RUN_STARTED:
+      return { ...state, messageId: (event.metadata as RunStartedMetadata | undefined)?.messageId ?? state.messageId };
+
     case EventType.STEP_STARTED:
       return { ...state, step: stepFromName(event.stepName, state.step) };
 
@@ -148,12 +163,13 @@ export function reduceRunEvent(state: RunState, event: AGUIEvent): RunState {
     }
     case EventType.TOOL_CALL_RESULT: {
       const startedAt = state.pending[event.toolCallId]?.startedAt;
+      // AG-UI 1.0 tool results are text or multimodal content parts (already JSON).
+      const result =
+        typeof event.content === "string" ? parseJson(event.content) : (event.content as Part<"tool-call">["result"]);
+      const failed = (event.metadata as ToolResultMetadata | undefined)?.isError === true;
       return updatePart(state, "tool-call", event.toolCallId, (part) => ({
         ...part,
-        status: "success",
-        // AG-UI 1.0 tool results are text or multimodal content parts (already JSON).
-        result:
-          typeof event.content === "string" ? parseJson(event.content) : (event.content as Part<"tool-call">["result"]),
+        ...(failed ? { status: "error", error: toolError(result) } : { status: "success", result }),
         durationMs: startedAt !== undefined && at !== undefined ? Math.max(0, at - startedAt) : part.durationMs,
       }));
     }
@@ -200,6 +216,15 @@ export function reduceRunEvent(state: RunState, event: AGUIEvent): RunState {
     default:
       return state;
   }
+}
+
+/** Failed tool results are `{ error: "…" }` (TanStack AI) or plain text. */
+function toolError(result: Part<"tool-call">["result"]): string {
+  if (typeof result === "string") return result;
+  if (result && typeof result === "object" && !Array.isArray(result) && typeof result.error === "string") {
+    return result.error;
+  }
+  return JSON.stringify(result);
 }
 
 /** Tool calls still in flight when a run ends never got a result. */
